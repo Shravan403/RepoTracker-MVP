@@ -1,6 +1,10 @@
-import { promises as fs } from 'node:fs';
+import { promises as fs, existsSync } from 'node:fs';
 import path from 'node:path';
 import { DEFAULT_CONFIG } from './constants.js';
+
+export function isDocker() {
+  return existsSync('/.dockerenv');
+}
 
 export async function writeJsonIfMissing(filePath, value) {
   try {
@@ -111,6 +115,7 @@ export function sanitizeConfigForResponse(config) {
     jiraDomain:         config.jiraDomain || '', // Safe to expose
     jiraEmail:          config.jiraEmail || '',  // Safe to expose
     jiraApiToken:       config.jiraApiToken ? MASK : '',
+    isDocker:           isDocker(),
   };
 }
 

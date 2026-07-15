@@ -252,7 +252,7 @@ export function applySecurityHeaders(response) {
   response.setHeader('Referrer-Policy', 'no-referrer');
   response.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://formspree.io https://api.github.com https://gist.github.com https://api.gist.github.com https://generativelanguage.googleapis.com https://api.linear.app https://hooks.slack.com https://*.atlassian.net https://wakatime.com"
+    "default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cdnjs.cloudflare.com https://formspree.io https://api.github.com https://gist.github.com https://api.gist.github.com https://generativelanguage.googleapis.com https://api.linear.app https://hooks.slack.com https://*.atlassian.net https://wakatime.com"
   );
 }
 

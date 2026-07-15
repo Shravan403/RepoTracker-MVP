@@ -8,7 +8,7 @@
   <link rel="icon" href="/logo.svg">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/vendor/xterm/css/xterm.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6f5gF7HJF4ZUqO/C4hGy/Le8tE0+ZQ/5aZTOTq84Ssi0HwtoC/k1K1y21E81sX5eE//B7Z4H1pP3yA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" integrity="sha512-H+rglffZ6f5gF7UJgvH4Naa+fGCgjrHKMgoFOGmcPTRwR6oILo5R+gtzNrpDp7iMV3udbymBVjkeZGNz1Em4rQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 
 <body>
@@ -323,8 +323,15 @@
           <label>
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
               <span>Folders to scan, one per line</span>
-              <button type="button" class="ghost" id="settingsBrowseBtn"
-                style="min-height: 24px; padding: 4px 12px; font-size: 0.85rem;">Browse...</button>
+              <div>
+                <button type="button" class="ghost" id="settingsBrowseBtn"
+                  style="min-height: 24px; padding: 4px 12px; font-size: 0.85rem;">Browse...</button>
+                <button type="button" class="ghost hidden" id="settingsSuggestBtn"
+                  style="min-height: 24px; padding: 4px 12px; font-size: 0.85rem;">Suggest Mounted Paths</button>
+              </div>
+            </div>
+            <div id="settingsDockerNotice" class="hidden" style="background: color-mix(in srgb, var(--info) 10%, transparent); border: 1px solid color-mix(in srgb, var(--info) 30%, transparent); padding: 12px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem;">
+              <strong>🐳 Docker Detected:</strong> Use mounted container paths (e.g. <code>/repos</code>), not host paths.
             </div>
             <textarea id="rootsInput" rows="6" spellcheck="false"></textarea>
           </label>
@@ -700,12 +707,23 @@
           <h2 class="wizard-heading">Add your code folders</h2>
           <p class="wizard-sub">RepoTracker will scan these for Git repositories. You can add more later in Settings.</p>
 
+          <div id="wizDockerNotice" class="hidden" style="background: color-mix(in srgb, var(--info) 10%, transparent); border: 1px solid color-mix(in srgb, var(--info) 30%, transparent); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+            <h4 style="margin: 0 0 8px; color: var(--info); font-size: 0.95rem;">🐳 Docker Detected</h4>
+            <div id="wizDockerMountsContent">
+              <!-- populated by app.js -->
+            </div>
+          </div>
+
           <div class="wizard-folder-list" id="wizFolderList">
             <!-- folder chips injected here -->
           </div>
           <button class="wizard-add-folder-btn" id="wizAddFolderBtn" type="button">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Add Folder
+          </button>
+          <button class="wizard-add-folder-btn hidden" id="wizSuggestFolderBtn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            Suggest Mounted Folders
           </button>
 
           <div class="wizard-actions" style="margin-top:20px;">

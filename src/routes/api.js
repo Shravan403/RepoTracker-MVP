@@ -4,10 +4,11 @@ import { spawn, execFile, exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { CONFIG_FILE, META_FILE, DEFAULT_CONFIG } from '../constants.js';
-import { readJson, writeJson, writeJsonIfMissing, normalizeConfig, readRequestJson, sendJson, sanitizeConfigForResponse } from '../utils.js';
+import { readJson, writeJson, writeJsonIfMissing, normalizeConfig, readRequestJson, sendJson, sanitizeConfigForResponse, isDocker } from '../utils.js';
 import { scanRepos, runGit, detectScripts, getCommitActivity, getStandupData } from '../git.js';
 import { hashPassword, verifyPassword, createSession, destroySession, isValidSession, makeSessionCookie, LOCAL_IPC_TOKEN, isValidTeamToken } from '../security.js';
 import { notifyDesktop } from '../notify.js';
+import { pathResolver } from '../pathResolver.js';
 import os from 'node:os';
 import { WebSocketServer } from 'ws';
 
@@ -77,8 +78,12 @@ wss.on('connection', (ws, request) => {
     activeTasks.delete(taskId);
   });
 
-  const exitListener = termProcess.onExit(() => {
-    ws.close(1000, 'Process exited');
+  const exitListener = termProcess.onExit((event) => {
+    const code = event ? event.exitCode : 0;
+    setTimeout(() => {
+      try { ws.send(`\r\n\x1b[90m[Process exited with code ${code}]\x1b[0m\r\n`); } catch (e) {}
+      ws.close(1000, 'Process exited');
+    }, 1500);
     exitListener.dispose();
   });
 });
@@ -297,23 +302,7 @@ export async function handleApi(request, response) {
 
   // GET /api/suggest-roots — guarded: exposes local filesystem paths
   if (request.method === 'GET' && requestUrl.pathname === '/api/v1/suggest-roots') {
-    const home = os.homedir();
-    const commonPaths = [
-      path.join(home, 'Projects'),
-      path.join(home, 'source', 'repos'),
-      path.join(home, 'Documents', 'GitHub'),
-      path.join(home, 'Development'),
-      path.join(home, 'Code'),
-      path.join(home, 'workspace'),
-      path.join(home, 'Documents'),
-      path.join(home, 'Desktop')
-    ];
-    const existingPaths = [];
-    for (const p of commonPaths) {
-      try {
-        if ((await fs.stat(p)).isDirectory()) existingPaths.push(p);
-      } catch { }
-    }
+    const existingPaths = await pathResolver.getCommonRoots();
     sendJson(response, 200, { suggestions: existingPaths });
     return;
   }
@@ -355,8 +344,22 @@ export async function handleApi(request, response) {
     const jiraEmail           = body.jiraEmail             !== undefined ? body.jiraEmail : config.jiraEmail;
     const jiraApiToken        = body.jiraApiToken          !== undefined ? body.jiraApiToken : config.jiraApiToken;
 
+    const updatedRoots = body.roots || [];
+    const oldRoots = config.roots || [];
+    
+    // Only validate newly added roots to maintain backward compatibility
+    for (const r of updatedRoots) {
+      if (!oldRoots.includes(r)) {
+        const validation = await pathResolver.validateRoot(r);
+        if (!validation.valid) {
+          sendJson(response, 400, { error: validation.error });
+          return;
+        }
+      }
+    }
+
     const updatedConfig = normalizeConfig({
-      roots:          body.roots,
+      roots:          updatedRoots,
       maxDepth:       body.maxDepth,
       userName:       body.userName,
       githubPat,
@@ -386,7 +389,7 @@ export async function handleApi(request, response) {
   if (request.method === 'GET' && requestUrl.pathname === '/api/v1/repos') {
     const meta = await readJson(META_FILE, {});
     const rawRepos = await scanRepos(config, meta);
-    const repos = Array.isArray(rawRepos) ? rawRepos : [];
+    const repos = Array.isArray(rawRepos) ? rawRepos : (rawRepos.repos || []);
 
     // Feature 3: Smart Desktop Notifications — fire alerts for repos needing attention
     // Throttled: max 1 notification per repo per hour via meta.json lastNotifiedAt
@@ -430,7 +433,7 @@ export async function handleApi(request, response) {
       await writeJson(META_FILE, { ...meta, _notifications: notifMeta });
     }
 
-    sendJson(response, 200, repos);
+    sendJson(response, 200, rawRepos);
     return;
   }
 

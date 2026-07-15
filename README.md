@@ -172,7 +172,7 @@ repotracker/
 
 ---
 
-## 🐳 Docker
+## 🐳 Docker Setup
 
 ```bash
 docker compose up -d
@@ -180,10 +180,32 @@ docker compose up -d
 
 Access at [http://localhost:4177](http://localhost:4177). All data is persisted in the `./data` volume.
 
+### Volume Mounting (Required for scanning)
+
+Docker containers cannot access host directories by default. To allow RepoTracker to scan your repositories, you **must mount your host directories** as volumes in your `docker-compose.yml`.
+
+Example `docker-compose.yml` configuration:
+```yaml
+services:
+  repotracker:
+    image: vinit080/repotracker:latest
+    ports:
+      - "4177:4177"
+    volumes:
+      - ./data:/app/data
+      # Mount your host code directory to a container path
+      - C:\Users\YourName\Code:/repos
+```
+
+### Configuring Scan Roots
+
+When setting up RepoTracker in the UI, **do not use your host path** (like `C:\Users\YourName\Code`). Instead, you must use the **mounted container path** (e.g., `/repos`). RepoTracker will automatically detect it is running in Docker and help suggest common mounted paths.
+
 **Team Mode via Docker:**
 ```bash
 REPOTRACKER_TEAM=1 docker compose up -d
 ```
+
 
 ---
 

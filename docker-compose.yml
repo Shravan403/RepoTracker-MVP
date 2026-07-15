@@ -17,7 +17,7 @@ services:
       - REPOTRACKER_TEAM=1
       - PORT=4177
     # Uncomment to set a custom password on first run:
-    # - REPOTRACKER_PASSWORD=changeme
+      - REPOTRACKER_PASSWORD=changeme
 
 volumes:
   repotracker-data:

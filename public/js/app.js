@@ -427,6 +427,17 @@ async function loadConfig() {
       ? 'Password set \u2014 leave blank to keep, type to change'
       : 'Leave blank for no password';
     el.logoutBtn.classList.toggle('hidden', !state.config.appPasswordSet);
+
+    if (state.config.isDocker) {
+      document.getElementById('settingsBrowseBtn')?.classList.add('hidden');
+      document.getElementById('settingsSuggestBtn')?.classList.remove('hidden');
+      document.getElementById('settingsDockerNotice')?.classList.remove('hidden');
+    } else {
+      document.getElementById('settingsBrowseBtn')?.classList.remove('hidden');
+      document.getElementById('settingsSuggestBtn')?.classList.add('hidden');
+      document.getElementById('settingsDockerNotice')?.classList.add('hidden');
+    }
+
     return true;
   } catch (err) {
     if (err.message === 'UNAUTHORIZED') {
@@ -790,13 +801,15 @@ function renderRepoCard(repo) {
       } catch (err) { showToast(`Auto-setup failed: ${err.message}`, 'error'); }
     });
 
-    shelbyBtn.classList.remove('hidden');
-    shelbyBtn.addEventListener('click', async () => {
-      try {
-        const res = await api('/api/v1/repos/terminal', { method: 'POST', body: JSON.stringify({ path: repo.path }) });
-        openShelby('Terminal', res.taskId);
-      } catch (err) { showToast(`Failed to start: ${err.message}`, 'error'); }
-    });
+    if (shelbyBtn) {
+      shelbyBtn.classList.remove('hidden');
+      shelbyBtn.addEventListener('click', async () => {
+        try {
+          const res = await api('/api/v1/repos/terminal', { method: 'POST', body: JSON.stringify({ path: repo.path }) });
+          openShelby('Terminal', res.taskId);
+        } catch (err) { showToast(`Failed to start: ${err.message}`, 'error'); }
+      });
+    }
 
     auditBtn.addEventListener('click', async () => {
       auditBtn.textContent = 'Auditing...';
@@ -864,6 +877,15 @@ async function openRepo(repoPath) {
 async function saveSettings(event) {
   if (event) event.preventDefault();
   const roots = el.rootsInput.value.split(/\r?\n/).map(r => r.trim()).filter(Boolean);
+
+  if (state.config?.isDocker) {
+    const hasWindowsPath = roots.some(r => /^[a-zA-Z]:\\/.test(r) || /^\\\\/.test(r) || /^[a-zA-Z]:\//.test(r));
+    if (hasWindowsPath) {
+      showToast('Docker Error: Do not use Windows host paths (e.g. C:\\...). Use the mounted container path (e.g. /repos).', 'error');
+      return;
+    }
+  }
+
   const maxDepth = parseInt(el.depthInput.value, 10) || 4;
   const userName = el.userNameInput.value.trim();
   const githubPat = el.patInput.value.trim();
@@ -1330,6 +1352,29 @@ async function handleFolderBrowse(textareaElement) {
 
 el.settingsBrowseBtn.addEventListener('click', () => handleFolderBrowse(el.rootsInput));
 
+const settingsSuggestBtn = document.getElementById('settingsSuggestBtn');
+if (settingsSuggestBtn) {
+  settingsSuggestBtn.addEventListener('click', async () => {
+    try {
+      const res = await api('/api/v1/suggest-roots');
+      if (res.suggestions?.length) {
+        const current = el.rootsInput.value;
+        const toAdd = res.suggestions.filter(s => !current.includes(s));
+        if (toAdd.length) {
+          el.rootsInput.value = current ? current.replace(/[\r\n]+$/, '') + '\n' + toAdd.join('\n') : toAdd.join('\n');
+          showToast(`Added ${toAdd.length} mounted folders`, 'success');
+        } else {
+          showToast('No new mounted folders found.', 'info');
+        }
+      } else {
+        showToast('No mounted folders detected.', 'info');
+      }
+    } catch (e) {
+      showToast('Failed to suggest roots: ' + e.message, 'error');
+    }
+  });
+}
+
 
 // ── Onboarding Wizard ────────────────────────────────────────────────────────
 
@@ -1387,12 +1432,62 @@ function renderWizFolders() {
 async function showWizard() {
   el.wizard.classList.add('active');
   el.shell.style.display = 'none';
+
+  if (state.config?.isDocker) {
+    document.getElementById('wizDockerNotice')?.classList.remove('hidden');
+    document.getElementById('wizAddFolderBtn')?.classList.add('hidden');
+    document.getElementById('wizSuggestFolderBtn')?.classList.remove('hidden');
+  } else {
+    document.getElementById('wizDockerNotice')?.classList.add('hidden');
+    document.getElementById('wizAddFolderBtn')?.classList.remove('hidden');
+    document.getElementById('wizSuggestFolderBtn')?.classList.add('hidden');
+    // Hide the wizard auto-suggestion button entirely in Docker now since we use the inline Add Selected UI
+    if (state.config?.isDocker) {
+      document.getElementById('wizSuggestFolderBtn')?.classList.add('hidden');
+    }
+  }
+
   // Pre-populate suggestions as auto-added folders on step 2
   try {
     const res = await api('/api/v1/suggest-roots');
     if (res.suggestions?.length) {
-      wizard.roots = res.suggestions.map(p => ({ path: p }));
-      renderWizFolders();
+      if (!state.config?.isDocker) {
+        wizard.roots = res.suggestions.map(p => ({ path: p }));
+        renderWizFolders();
+      }
+    }
+
+    if (state.config?.isDocker) {
+      const container = document.getElementById('wizDockerMountsContent');
+      if (res.suggestions?.length) {
+        container.innerHTML = `
+          <div style="font-weight: 500; margin-bottom: 8px;">Detected mounted folders</div>
+          <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">
+            ${res.suggestions.map(s => `<label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem;"><input type="checkbox" value="${escapeAttribute(s)}" class="docker-mount-cb" checked> <span style="font-family: monospace;">${escapeHtml(s)}</span></label>`).join('')}
+          </div>
+          <button type="button" class="primary" id="wizDockerAddSelectedBtn" style="font-size: 0.85rem; padding: 4px 12px;">Add Selected</button>
+        `;
+        document.getElementById('wizDockerAddSelectedBtn').addEventListener('click', () => {
+          const cbs = container.querySelectorAll('.docker-mount-cb:checked');
+          let added = 0;
+          cbs.forEach(cb => {
+            if (!wizard.roots.find(r => r.path === cb.value)) {
+              wizard.roots.push({ path: cb.value });
+              added++;
+            }
+          });
+          if (added > 0) {
+            renderWizFolders();
+            showToast(`Added ${added} folders`, 'success');
+          }
+        });
+      } else {
+        container.innerHTML = `
+          <p style="margin: 0 0 12px; font-size: 0.85rem; line-height: 1.4;">No host repositories are currently mounted into this container. You must mount your host directories as volumes.</p>
+          <pre style="background: var(--bg); padding: 8px; border-radius: 4px; font-size: 0.75rem; margin: 0; color: var(--text);"><code>volumes:
+  - C:\\Users\\YourName\\Code:/repos</code></pre>
+        `;
+      }
     }
   } catch { /* no suggestions — fine */ }
 }
@@ -1429,16 +1524,16 @@ async function completeWizard() {
   try {
     state.config = await api('/api/v1/config', { method: 'PUT', body: JSON.stringify(payload) });
     // Sync settings panel fields
-    el.userNameInput.value = state.config.userName || '';
-    el.rootsInput.value = (state.config.roots || []).join('\n');
-    el.patInput.value = state.config.githubPat || '';
-    el.aiKeyInput.value = state.config.aiApiKey || '';
-    el.wakaKeyInput.value = state.config.wakatimeApiKey || '';
-    el.slackWebhookInput.value = state.config.slackWebhookUrl || '';
-    el.linearKeyInput.value = state.config.linearApiKey || '';
-    el.jiraDomainInput.value = state.config.jiraDomain || '';
-    el.jiraEmailInput.value = state.config.jiraEmail || '';
-    el.jiraTokenInput.value = state.config.jiraApiToken || '';
+    if (el.userNameInput) el.userNameInput.value = state.config.userName || '';
+    if (el.rootsInput) el.rootsInput.value = (state.config.roots || []).join('\n');
+    if (el.patInput) el.patInput.value = state.config.githubPat || '';
+    if (el.aiKeyInput) el.aiKeyInput.value = state.config.aiApiKey || '';
+    if (el.wakaKeyInput) el.wakaKeyInput.value = state.config.wakatimeApiKey || '';
+    if (el.slackWebhookInput) el.slackWebhookInput.value = state.config.slackWebhookUrl || '';
+    if (el.linearKeyInput) el.linearKeyInput.value = state.config.linearApiKey || '';
+    if (el.jiraDomainInput) el.jiraDomainInput.value = state.config.jiraDomain || '';
+    if (el.jiraEmailInput) el.jiraEmailInput.value = state.config.jiraEmail || '';
+    if (el.jiraTokenInput) el.jiraTokenInput.value = state.config.jiraApiToken || '';
 
     el.appPasswordInput.value = '';
     if (appPassword) {
@@ -1517,7 +1612,44 @@ el.wizAddFolderBtn?.addEventListener('click', async () => {
   }
 });
 
-el.wizStep2Next?.addEventListener('click', () => goToStep(3));
+const wizSuggestFolderBtn = document.getElementById('wizSuggestFolderBtn');
+if (wizSuggestFolderBtn) {
+  wizSuggestFolderBtn.addEventListener('click', async () => {
+    try {
+      const res = await api('/api/v1/suggest-roots');
+      if (res.suggestions?.length) {
+        let added = 0;
+        for (const s of res.suggestions) {
+          if (!wizard.roots.find(r => r.path === s)) {
+            wizard.roots.push({ path: s });
+            added++;
+          }
+        }
+        if (added > 0) {
+          renderWizFolders();
+          showToast(`Added ${added} mounted folders`, 'success');
+        } else {
+          showToast('No new mounted folders found.', 'info');
+        }
+      } else {
+        showToast('No mounted folders detected.', 'info');
+      }
+    } catch (e) {
+      showToast('Failed to suggest roots: ' + e.message, 'error');
+    }
+  });
+}
+
+el.wizStep2Next?.addEventListener('click', () => {
+  if (state.config?.isDocker) {
+    const hasWindowsPath = wizard.roots.some(r => /^[a-zA-Z]:\\/.test(r.path) || /^\\\\/.test(r.path) || /^[a-zA-Z]:\//.test(r.path));
+    if (hasWindowsPath) {
+      showToast('Docker Error: Do not use Windows host paths (e.g. C:\\...). Use the mounted container path (e.g. /repos).', 'error');
+      return;
+    }
+  }
+  goToStep(3);
+});
 el.wizStep2Skip?.addEventListener('click', () => goToStep(3));
 
 // Step 3 — GitHub token verification
@@ -1577,8 +1709,8 @@ el.wizStep3Skip?.addEventListener('click', () => {
 el.wizStep4Back?.addEventListener('click', () => goToStep(3, true));
 
 el.wizFinishBtn?.addEventListener('click', () => {
-  wizard.aiKey = el.wizAiKey?.value.trim() || '';
-  wizard.wakaKey = el.wizWakaKey?.value.trim() || '';
+  wizard.aiKey = el.wizAiKey?.value?.trim() || '';
+  wizard.wakaKey = el.wizWakaKey?.value?.trim() || '';
   completeWizard();
 });
 
@@ -2600,5 +2732,4 @@ if (window.electronAPI && el.updateReadyBtn) {
   }
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-init();
+// ── END ──────────────────────────────────────────────────────────────────────

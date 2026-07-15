@@ -61,6 +61,13 @@ async function ensureDataFiles() {
     dirty = true;
   }
 
+  // Allow setting initial password via environment variable (useful for Docker)
+  if (process.env.REPOTRACKER_PASSWORD && !raw.appPasswordHash) {
+    console.log('\u2705 Applying password from REPOTRACKER_PASSWORD environment variable...');
+    raw.appPasswordHash = hashPassword(process.env.REPOTRACKER_PASSWORD);
+    dirty = true;
+  }
+
   if (raw.appPasswordHash && !isHashValid(raw.appPasswordHash)) {
     console.warn('⚠️  Invalid password hash detected. Wiping it. You will need to setup a new password.');
     delete raw.appPasswordHash;
