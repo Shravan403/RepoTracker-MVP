@@ -1,5 +1,9 @@
 <div align="center">
 
+<img src="./assets/banner.png" alt="RepoTracker Banner" width="100%">
+
+<br/>
+
 <img src="https://img.shields.io/badge/RepoTracker-v1.0.9-6366f1?style=for-the-badge&logoColor=white" alt="RepoTracker v1.0.9">
 
 **Your intelligent, local-first Git mission control.**
@@ -25,6 +29,38 @@ RepoTracker automatically discovers, monitors, and manages every Git repository 
 ---
 
 ## ✨ Features
+
+### 📸 Screenshots & Gallery
+
+<details>
+<summary><strong>🎛️ Local-First Dashboard</strong> (Click to expand)</summary>
+<br/>
+<img src="./assets/screenshot-dashboard.png" alt="RepoTracker Dashboard" width="100%">
+<em>See every working repo, what needs attention, and where your momentum is.</em>
+</details>
+
+<details>
+<summary><strong>🗂️ Repository Overview</strong> (Click to expand)</summary>
+<br/>
+<img src="./assets/screenshot-repos.png" alt="Repository Management" width="100%">
+<em>Manage multiple repos, check health scores, and clone to local with one click.</em>
+</details>
+
+<details>
+<summary><strong>💻 Integrated Shelby Terminal</strong> (Click to expand)</summary>
+<br/>
+<img src="./assets/screenshot-terminal.png" alt="Integrated Terminal" width="100%">
+<em>Run commands directly from the dashboard without switching context.</em>
+</details>
+
+<details>
+<summary><strong>⚙️ Scan Settings & GitHub Integration</strong> (Click to expand)</summary>
+<br/>
+<img src="./assets/screenshot-settings.png" alt="Scan Settings" width="100%">
+<em>Configure folders to scan, max depth, and integrate your GitHub PAT.</em>
+</details>
+
+<br/>
 
 ### 🗂️ Repository Management
 | Feature | Description |
