@@ -60,6 +60,27 @@ RepoTracker automatically discovers, monitors, and manages every Git repository 
 <em>Configure folders to scan, max depth, and integrate your GitHub PAT.</em>
 </details>
 
+<details>
+<summary><strong>🤝 Team Workspace</strong> (Click to expand)</summary>
+<br/>
+<img src="./assets/screenshot-team.png" alt="Team Workspace" width="100%">
+<em>Connect to your team's shared workspace repository to sync dashboard data.</em>
+</details>
+
+<details>
+<summary><strong>📊 Insights & Timeline</strong> (Click to expand)</summary>
+<br/>
+<img src="./assets/screenshot-insights.png" alt="Insights and Timeline" width="100%">
+<em>Track your 90-day contribution graph, view global timeline, and generate AI standups.</em>
+</details>
+
+<details>
+<summary><strong>🌐 Ecosystem Overview</strong> (Click to expand)</summary>
+<br/>
+<img src="./assets/screenshot-ecosystem.png" alt="Ecosystem Overview" width="100%">
+<em>A bird's-eye view of your entire GitHub ecosystem with one-click cloning.</em>
+</details>
+
 <br/>
 
 ### 🗂️ Repository Management
