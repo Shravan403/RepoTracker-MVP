@@ -5,6 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RepoTracker | Local-First Git Mission Control</title>
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="RepoTracker is an AI-powered, local-first Git repository dashboard for monitoring repository health, automating Git workflows, and boosting developer productivity.">
+    <meta name="keywords" content="RepoTracker, Git Dashboard, GitHub, Repository Manager, Developer Tools, Electron, Git Automation">
+    <meta name="author" content="Shravan Sharma">
+    <meta property="og:title" content="RepoTracker MVP">
+    <meta property="og:description" content="AI-powered local-first Git repository dashboard">
+    <meta property="og:image" content="https://YOUR-DOMAIN/logo.png">
+    <meta property="og:type" content="website">
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -448,18 +456,20 @@
         <nav class="nav-links">
             <a href="#features">Features</a>
             <a href="#pricing">Pricing</a>
-            <a href="https://github.com/Vinit080/repotracker" target="_blank">GitHub</a>
+            <a href="https://github.com/Shravan403/RepoTracker-MVP"
+               target="_blank"
+               rel="noopener noreferrer">GitHub</a>
         </nav>
     </header>
 
-    <section class="hero container">
+    <section id="hero" class="hero container">
         <h1>Your intelligent, local-first <br><span>Git mission control.</span></h1>
         <p>Automatically discover, monitor, and manage every Git repository on your machine from a single, stunning
             dashboard. No cloud. No tracking. Your code stays yours.</p>
         <div id="download-buttons" style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 32px;">
-            <a href="https://github.com/Vinit080/repotracker/releases/latest" id="btn-win" class="btn btn-primary">Windows (.exe)</a>
-            <a href="https://github.com/Vinit080/repotracker/releases/latest" id="btn-mac" class="btn btn-primary">Mac (.dmg)</a>
-            <a href="https://github.com/Vinit080/repotracker/releases/latest" id="btn-linux" class="btn btn-primary">Linux (.AppImage)</a>
+            <a href="https://github.com/Shravan403/RepoTracker-MVP/releases/latest" id="btn-win" class="btn btn-primary">Windows (.exe)</a>
+            <a href="https://github.com/Shravan403/RepoTracker-MVP/releases/latest" id="btn-mac" class="btn btn-primary">Mac (.dmg)</a>
+            <a href="https://github.com/Shravan403/RepoTracker-MVP/releases/latest" id="btn-linux" class="btn btn-primary">Linux (.AppImage)</a>
             <a href="#pricing" class="btn btn-secondary" style="margin-left: 0;">View Pricing</a>
         </div>
         <p id="version-info" style="margin-top: 16px; font-size: 0.95rem; color: var(--muted);"></p>
@@ -547,7 +557,7 @@
     <script>
         async function fetchLatestRelease() {
             try {
-                const response = await fetch('https://api.github.com/repos/Vinit080/repotracker/releases/latest');
+                const response = await fetch('https://api.github.com/repos/Shravan403/RepoTracker-MVP/releases/latest');
                 const data = await response.json();
                 
                 if (data && data.assets) {
