@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import os from 'node:os';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 
 export const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,7 +14,7 @@ try {
 }
 
 export const APP_VERSION = process.env.npm_package_version || packageVersion;
-export const DATA_DIR = path.join(os.homedir(), '.repotracker');
+export const DATA_DIR = existsSync('/.dockerenv') ? '/app/data' : path.join(os.homedir(), '.repotracker');
 export const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 export const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 export const META_FILE = path.join(DATA_DIR, 'repo-meta.json');

@@ -11,6 +11,7 @@
 import { pbkdf2Sync, randomBytes, timingSafeEqual, createHash } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { isIP } from 'node:net';
 import { DATA_DIR } from './constants.js';
 
 const SESSION_FILE = path.join(DATA_DIR, 'sessions.json');
@@ -260,39 +261,48 @@ export function applySecurityHeaders(response) {
 
 const ALLOWED_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
-// In team mode, also allow LAN IPs (RFC-1918 private address ranges)
-function isPrivateLanIp(host) {
-  return (
-    /^10\.\d+\.\d+\.\d+$/.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\.\d+\.\d+$/.test(host) ||
-    /^192\.168\.\d+\.\d+$/.test(host)
-  );
+// In team mode, allow any IP address (DNS-rebinding relies on domains, so IPs are safe)
+function isTeamModeIp(host) {
+  return isIP(host) !== 0;
 }
 
 /**
  * Returns true if the Host header is allowed.
  * In solo mode: localhost only (DNS-rebinding protection).
- * In team mode: also allows LAN (RFC-1918) IP addresses.
+ * In team mode: also allows any IP addresses.
+ * Explicitly allows domains from REPOTRACKER_ALLOWED_HOSTS.
  * @param {import('node:http').IncomingMessage} request
  */
 export function isAllowedHost(request) {
+  if (process.env.REPOTRACKER_DISABLE_HOST_CHECK === 'true' || process.env.REPOTRACKER_DISABLE_HOST_CHECK === '1') return true;
+
   const rawHost = request.headers.host || '';
   const host = rawHost.replace(/:\d+$/, '').toLowerCase();
+
+  const customHosts = process.env.REPOTRACKER_ALLOWED_HOSTS;
+  if (customHosts && customHosts.split(',').map(s => s.trim().toLowerCase()).includes(host)) return true;
+
   if (ALLOWED_HOSTS.has(host)) return true;
-  // Team mode: allow private LAN IPs so teammates can access the dashboard
+  // Team mode: allow IP addresses so teammates can access the dashboard
   const teamMode = process.env.REPOTRACKER_TEAM === '1' || process.argv.includes('--team');
-  if (teamMode && isPrivateLanIp(host)) return true;
+  if (teamMode && isTeamModeIp(host)) return true;
   return false;
 }
 
 export function isAllowedOrigin(request) {
+  if (process.env.REPOTRACKER_DISABLE_HOST_CHECK === 'true' || process.env.REPOTRACKER_DISABLE_HOST_CHECK === '1') return true;
+
   const origin = request.headers.origin;
   if (!origin) return true;
   try {
     const { hostname } = new URL(origin);
+
+    const customHosts = process.env.REPOTRACKER_ALLOWED_HOSTS;
+    if (customHosts && customHosts.split(',').map(s => s.trim().toLowerCase()).includes(hostname)) return true;
+
     if (ALLOWED_HOSTS.has(hostname)) return true;
     const teamMode = process.env.REPOTRACKER_TEAM === '1' || process.argv.includes('--team');
-    if (teamMode && isPrivateLanIp(hostname)) return true;
+    if (teamMode && isTeamModeIp(hostname)) return true;
     return false;
   } catch { return false; }
 }
@@ -307,6 +317,9 @@ export function isAllowedOrigin(request) {
 export function makeSessionCookie(token, request) {
   const host = request?.headers?.host?.replace(/:\d+$/, '') || 'localhost';
   const isLocalhost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
-  const secureFlag = isLocalhost ? '' : '; Secure';
+  const isIp = isTeamModeIp(host);
+  // Allow insecure cookies for IP addresses (for EC2 testing) or if explicitly requested
+  const allowInsecure = isLocalhost || isIp || process.env.REPOTRACKER_INSECURE_COOKIES === 'true';
+  const secureFlag = allowInsecure ? '' : '; Secure';
   return `repo_auth=${token}; HttpOnly; SameSite=Strict; Path=/${secureFlag}`;
 }
