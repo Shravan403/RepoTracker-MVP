@@ -1,3 +1,4 @@
+![Deploy to AWS EC2](https://github.com/Shravan403/RepoTracker-MVP/actions/workflows/deploy.yml/badge.svg)
 <div align="center">
 
 <img src="./assets/banner.png" alt="RepoTracker Banner" width="100%">
