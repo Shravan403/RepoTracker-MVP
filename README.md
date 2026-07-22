@@ -1,4 +1,12 @@
 ![Deploy to AWS EC2](https://github.com/Shravan403/RepoTracker-MVP/actions/workflows/deploy.yml/badge.svg)
+![AWS](https://img.shields.io/badge/deployed-AWS%20EC2-orange)
+![Terraform](https://img.shields.io/badge/infra-Terraform-purple)
+
+## ☁️ Cloud Deployment
+Deployed on AWS EC2 via Terraform IaC + Docker + GitHub Actions CI/CD (auto-deploys in ~70s).
+Architecture: GitHub Actions → Amazon ECR → EC2 t2.micro → Nginx → CloudWatch monitoring.
+
+![Architecture](assets/AWS_architecture.png)
 <div align="center">
 
 <img src="./assets/banner.png" alt="RepoTracker Banner" width="100%">
@@ -315,3 +323,14 @@ Contributions, bug reports, and feature requests are welcome.
 MIT License. Free and open source. Use it up to your potential!
 
 © 2026 [Vinzone](https://github.com/Vinit080) — Built with ❤️ for developers who care about their Git hygiene.
+
+---
+
+## 📊 Infrastructure & Monitoring
+
+The application infrastructure is actively monitored using AWS CloudWatch to track system metrics and ensure high availability.
+
+* 📈 **Dashboard:** [Live Monitoring Dashboard](https://cloudwatch.amazonaws.com/dashboard.html?dashboard=RepoTracker-Prod&context=eyJSIjoidXMtZWFzdC0xIiwiRCI6ImN3LWRiLTQwODY2OTg1NzQwMSIsIlUiOiJ1cy1lYXN0LTFfWjI5V1Qzd0VXIiwiQyI6Ijc5bnIxbDNucW1tNmtmYXNzcWl0Ymw4ZnI2IiwiSSI6InVzLWVhc3QtMTo0ZDc3MjRkZS03Yjg5LTQ1MzktYTA1My01Y2U1Y2Q0OWRmNGUiLCJNIjoiUHVibGljIn0=)
+* 🔔 **Alerting:** Real-time SNS email notifications for high CPU utilization (>80%) and status check failures.
+
+[![CloudWatch Dashboard](https://img.shields.io/badge/AWS-CloudWatch_Dashboard-FF9900?style=for-the-badge&logo=amazoncloudwatch&logoColor=white)](https://cloudwatch.amazonaws.com/dashboard.html?dashboard=RepoTracker-Prod&context=eyJSIjoidXMtZWFzdC0xIiwiRCI6ImN3LWRiLTQwODY2OTg1NzQwMSIsIlUiOiJ1cy1lYXN0LTFfWjI5V1Qzd0VXIiwiQyI6Ijc5bnIxbDNucW1tNmtmYXNzcWl0Ymw4ZnI2IiwiSSI6InVzLWVhc3QtMTo0ZDc3MjRkZS03Yjg5LTQ1MzktYTA1My01Y2U1Y2Q0OWRmNGUiLCJNIjoiUHVibGljIn0=S)
