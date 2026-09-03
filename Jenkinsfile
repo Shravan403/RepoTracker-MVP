@@ -55,14 +55,22 @@ pipeline {
             }
         }
 
-        stage('Health Check') {
+stage('Health Check') {
             steps {
                 sh '''
                     kubectl get pods -n ${NAMESPACE}
+                    
+                    # Get the assigned NodePort
                     NODE_PORT=$(kubectl get svc repotracker-service \
                         -n ${NAMESPACE} \
                         -o jsonpath="{.spec.ports[0].nodePort}")
-                    curl -f http://host.docker.internal:${NODE_PORT}/ \
+                        
+                    # Get the internal IP of the Minikube cluster node
+                    MINIKUBE_IP=$(kubectl get nodes \
+                        -o jsonpath="{.items[0].status.addresses[?(@.type=='InternalIP')].address}")
+                        
+                    # Ping the live application
+                    curl -f http://${MINIKUBE_IP}:${NODE_PORT}/ \
                         && echo "✅ Health check passed" \
                         || (echo "❌ Health check failed" && exit 1)
                 '''
