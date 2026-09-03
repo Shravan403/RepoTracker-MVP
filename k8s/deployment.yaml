@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: repotracker
+  namespace: repotracker
+  labels:
+    app: repotracker
+    version: v1.0.9
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app: repotracker
+  template:
+    metadata: 
+      labels:
+        app: repotracker
+      annotations: 
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "4177"
+    spec:
+      containers:
+      - name: repotracker
+        image: ghcr.io/shravan403/repotracker-mvp:latest
+        ports:
+        - containerPort: 4177
+        env:
+        - name: PORT
+          value: "4177"
+        - name: REPOTRACKER_TEAM
+          value: "1"
+        - name: REPOTRACKER_PASSWORD
+          value: "changeme"
+        - name: REPOTRACKER_INSECURE_COOKIES
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 4177
+          initialDelaySeconds: 30
+          periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: repotracker-service
+  namespace: repotracker
+spec:
+  selector:
+    app: repotracker
+  ports:
+  - port: 80
+    targetPort: 4177
+  type: NodePort
