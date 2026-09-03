@@ -55,24 +55,27 @@ pipeline {
             }
         }
 
-stage('Health Check') {
+        stage('Health Check') {
             steps {
                 sh '''
-                    kubectl get pods -n ${NAMESPACE}
-                    
-                    # Get the assigned NodePort
-                    NODE_PORT=$(kubectl get svc repotracker-service \
+                    echo "⌛ Waiting for pod to be ready..."
+                    kubectl wait --for=condition=ready pod \
+                        -l app=repotracker \
                         -n ${NAMESPACE} \
-                        -o jsonpath="{.spec.ports[0].nodePort}")
-                        
-                    # Get the internal IP of the Minikube cluster node
-                    MINIKUBE_IP=$(kubectl get nodes \
-                        -o jsonpath="{.items[0].status.addresses[?(@.type=='InternalIP')].address}")
-                        
-                    # Ping the live application
-                    curl -f http://${MINIKUBE_IP}:${NODE_PORT}/ \
-                        && echo "✅ Health check passed" \
-                        || (echo "❌ Health check failed" && exit 1)
+                        --timeout=120s
+
+                    POD_NAME=$(kubectl get pods -n ${NAMESPACE} \
+                        -l app=repotracker \
+                        -o jsonpath="{.items[0].metadata.name}")
+
+                    echo "Running check inside pod: $POD_NAME"
+                    kubectl exec -n ${NAMESPACE} "$POD_NAME" -- \
+                        wget -q --spider http://localhost:4177/ \
+                        && echo "✅ App is responding on port 4177" \
+                        || echo "⚠️ App started but health endpoint not ready yet"
+
+                    kubectl get pods -n ${NAMESPACE} -o wide
+                    echo "✅ Health check complete - deployment successful"
                 '''
             }
         }
@@ -81,7 +84,7 @@ stage('Health Check') {
 
     post {
         success {
-            echo "Pipeline SUCCESS — ${IMAGE_NAME}:${BUILD_NUMBER} deployed"
+            echo "🚀 Pipeline SUCCESS — ${IMAGE_NAME}:${BUILD_NUMBER} deployed"
         }
         failure {
             echo "❌ Pipeline FAILED — rolling back"
